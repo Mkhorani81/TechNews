@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from pathlib import Path
+import os
 
+from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +28,7 @@ SECRET_KEY = 'django-insecure-&-k1-@ajx0#t6eaqd@g+-9a=5mv4a#dw(*k4&vt*c+rcax04fc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -42,7 +44,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
 
-    'news.apps.NewsConfig'
+    'news.apps.NewsConfig',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -109,6 +112,21 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
+}
+
+# Celery Configuration Options
+CELERY_BROKER_URL = 'amqp://rabbitmq'
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+CELERY_BEAT_SCHEDULE = {
+    'run-spider-every-night': {
+        'task': 'TechNews.TechNews.tasks.run_spider',
+        'schedule': crontab(hour=23, minute=59),
+    },
 }
 
 
