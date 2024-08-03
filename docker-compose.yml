@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  app:
+    build: './TechNews'
+    container_name: 'TechNews'
+    restart: 'always'
+    working_dir: '/app'
+    volumes:
+      - './TechNews:/app/'
+    expose:
+      - '8000'
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    image: 'rabbitmq:management-alpine'
+    container_name: 'rabbitmq'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  celery:
+    build: './TechNews'
+    command: celery -A TechNews worker -l info
+    working_dir: '/app'
+    volumes:
+      - './TechNews:/app/'
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://rabbitmq
+
+  celery-beat:
+    build: './TechNews'
+    command: celery -A TechNews beat -l info
+    working_dir: '/app'
+    volumes:
+      - './TechNews:/app/'
+    depends_on:
+      - rabbitmq
+    environment:
+      - CELERY_BROKER_URL=amqp://rabbitmq
+
+  crawl-tech:
+    build: './CrawlTech'
+    container_name: 'CrawlTech'
+    restart: 'always'
+    working_dir: '/scrapy'
+    volumes:
+      - './CrawlTech:/scrapy/'
+    depends_on:
+      - app
+
+  nginx:
+    build: './nginx'
+    container_name: 'nginx'
+    restart: 'always'
+    ports:
+      - '80:80'
+    depends_on:
+      - app
